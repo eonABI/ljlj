@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connections Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      background-color: #fff;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .button {
+      padding: 10px;
+      text-align: center;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background-color: white;
+    }
+    .button.selected {
+      background-color: #cce4ff;
+      border: 2px solid #007bff;
+    }
+    .button.solved {
+      cursor: default;
+      color: #808080;
+    }
+    .bg-yellow { background-color: #fffbcc; }
+    .bg-green { background-color: #ccffcc; }
+    .bg-blue { background-color: #cce4ff; }
+    .bg-purple { background-color: #e4ccff; }
+    .message { font-weight: bold; text-align: center; margin: 10px 0; }
+    .won-message { font-size: 36px; font-weight: bold; text-align: center; margin: 20px 0; }
+    .found-category {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 4px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2 style="text-align:center;">14 jaar  ♡</h2>
+  <p style="text-align:center; color:gray;">Kry die groepies</p>
+  
+  <div class="grid" id="word-grid"></div>
+  
+  <div class="message" id="message"></div>
+  <div style="text-align:center; margin-top: 10px;">
+    <button onclick="checkSelection()" id="submit-btn" disabled>Submit</button>
+    <button onclick="resetGame()" id="clear-btn">Clear</button>
+  </div>
+  
+  <div id="found-categories" style="margin-top: 20px;">
+    <p><strong>Al gekry (0/4):</strong></p>
+  </div>
+</div>
+
+<div id="won-screen" class="won-message" style="display: none;">
+  LJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJLJ
+</div>
+
+<script>
+  const words = ['Villa', 'Loula', 'Tiara', 'Wellington', 'Marmot', 'Aapie', 'Slang', 'Kalfies', 'Draak', 'Country', 'Villagers', 'Maya', 'Perd', '56', 'Eton', 'Lollie'];
+  
+  const groups = {
+    'Huise waar ons al gebly het (Villa Sole, 56 Vloer Shanghai, Country Lane, Villager Lane)': ['Villa', '56', 'Country', 'Villagers'],
+    'Diere wat ons al gehad het/het, met die stupid Marmot ;)': ['Loula', 'Maya', 'Tiara', 'Marmot'],
+    'Kinderskole: Pop en Lollie, Koeitjies en Kalfies, Eton House, Wellington Shanghai': ['Lollie', 'Kalfies', 'Eton', 'Wellington'],
+    'Chinese Signs van ons 4 6 Dec 1980 – Monkey 🐒, 13 Feb 1978 – Snake 🐍, 19 Nov 2014 – Horse 🐎, 7 July 2012 – Dragon 🐉': ['Aapie', 'Slang', 'Draak', 'Perd']
+  };
+  
+  const colors = {
+    'Huise waar ons al gebly het': 'bg-yellow',
+    'Diere': 'bg-green',
+    'Kinderskole': 'bg-blue',
+    'Chinese Signs': 'bg-purple'
+  };
+
+  let selectedWords = [];
+  let solvedGroups = [];
+  const messageDiv = document.getElementById('message');
+  const submitBtn = document.getElementById('submit-btn');
+  const clearBtn = document.getElementById('clear-btn');
+  const wordGrid = document.getElementById('word-grid');
+  const foundCategoriesDiv = document.getElementById('found-categories');
+  const wonScreen = document.getElementById('won-screen');
+
+  function renderWords() {
+    wordGrid.innerHTML = '';
+    words.forEach(word => {
+      const button = document.createElement('button');
+      button.textContent = word;
+      button.classList.add('button');
+      button.onclick = () => toggleWord(word, button);
+      wordGrid.appendChild(button);
+    });
+  }
+
+  function toggleWord(word, button) {
+    if (solvedGroups.some(group => groups[group].includes(word))) return;
+    
+    if (selectedWords.includes(word)) {
+      selectedWords = selectedWords.filter(w => w !== word);
+      button.classList.remove('selected');
+    } else if (selectedWords.length < 4) {
+      selectedWords.push(word);
+      button.classList.add('selected');
+    }
+    submitBtn.disabled = selectedWords.length === 0;
+  }
+
+  function checkSelection() {
+    if (selectedWords.length < 4) {
+      messageDiv.textContent = 'Kies 4 woorde';
+      return;
+    }
+    
+    for (const [groupName, groupWords] of Object.entries(groups)) {
+      if (selectedWords.every(word => groupWords.includes(word))) {
+        if (!solvedGroups.includes(groupName)) {
+          solvedGroups.push(groupName);
+          messageDiv.textContent = `Correct! You found: ${groupName}`;
+          updateSolvedGroups();
+          resetSelection();
+          if (solvedGroups.length === 4) {
+            showWonScreen();
+          }
+          return;
+        }
+      }
+    }
+    messageDiv.textContent = 'meep meep meep, probeer weer!!';
+    resetSelection();
+  }
+
+  function resetSelection() {
+    selectedWords = [];
+    document.querySelectorAll('.button.selected').forEach(button => button.classList.remove('selected'));
+    submitBtn.disabled = true;
+  }
+
+  function resetGame() {
+    solvedGroups = [];
+    updateSolvedGroups();
+    renderWords();
+    messageDiv.textContent = '';
+    hideWonScreen();
+  }
+
+  function updateSolvedGroups() {
+    foundCategoriesDiv.innerHTML = `<p><strong>Found Categories (${solvedGroups.length}/4):</strong></p>`;
+    solvedGroups.forEach(group => {
+      const div = document.createElement('div');
+      div.className = `found-category ${colors[group]}`;
+      div.textContent = group;
+      foundCategoriesDiv.appendChild(div);
+    });
+  }
+
+  function showWonScreen() {
+    wonScreen.style.display = 'block';
+  }
+
+  function hideWonScreen() {
+    wonScreen.style.display = 'none';
+  }
+
+  renderWords();
+</script>
+
+</body>
+</html>
